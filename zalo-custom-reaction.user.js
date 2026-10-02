@@ -1163,18 +1163,41 @@
 	// Tracks the wrapper under the mouse so reactions land on the
 	// intended message instead of the first popup in the DOM.
 	let lastHoverWrapper = null;
+	let lastMouse = { x: -1, y: -1 };
+	document.addEventListener("mousemove", (e) => {
+		lastMouse = { x: e.clientX, y: e.clientY };
+	});
 	document.addEventListener("mouseover", (e) => {
 		const w = e.target?.closest?.(".emoji-list-wrapper");
 		if (w) lastHoverWrapper = w;
 	});
+	const inViewport = (el) => {
+		const r = el.getBoundingClientRect();
+		return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+	};
 	(typeof unsafeWindow !== "undefined" ? unsafeWindow : window).__rxTest =
 		(text, rType) => {
 			const wrappers = [...document.querySelectorAll(".emoji-list-wrapper")];
+			const inView = wrappers.filter(inViewport);
+			const nearest = (list) =>
+				list
+					.map((w) => {
+						const r = w.getBoundingClientRect();
+						const cx = r.left + r.width / 2;
+						const cy = r.top + r.height / 2;
+						return {
+							w,
+							d: Math.hypot(cx - lastMouse.x, cy - lastMouse.y),
+						};
+					})
+					.sort((a, b) => a.d - b.d)[0]?.w || null;
 			const wrapper =
-				(lastHoverWrapper && document.contains(lastHoverWrapper)
+				(lastHoverWrapper &&
+				document.contains(lastHoverWrapper) &&
+				inViewport(lastHoverWrapper)
 					? lastHoverWrapper
 					: null) ||
-				wrappers.find((w) => w.offsetParent !== null) ||
+				nearest(inView) ||
 				wrappers[0];
 			if (!wrapper) {
 				console.warn("[rxTest] open a message reaction popup first");
