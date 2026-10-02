@@ -7,6 +7,7 @@
 // @match        https://*.zalo.me/*
 // @match        https://chat.zalo.me/*
 // @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
 // @connect      cdn.jsdelivr.net
 // @license      MIT; https://opensource.org/licenses/MIT
 // @icon         https://cdn.jsdelivr.net/gh/ducladev/zalo-custom-reaction/icon.svg
@@ -1158,15 +1159,17 @@
 	}
 
 	// TEMP rType experiment hook — remove after phone tests
-	window.__rxTest = (text, rType) => {
-		const wrapper = document.querySelector(".emoji-list-wrapper");
-		if (!wrapper) {
-			console.warn("[rxTest] open a message reaction popup first");
-			return;
-		}
-		sendReaction(wrapper, { type: rType, icon: text });
-		console.log(`[rxTest] sent "${text}" with rType=${rType}`);
-	};
+	// (exposed via unsafeWindow so the page console can reach it)
+	(typeof unsafeWindow !== "undefined" ? unsafeWindow : window).__rxTest =
+		(text, rType) => {
+			const wrapper = document.querySelector(".emoji-list-wrapper");
+			if (!wrapper) {
+				console.warn("[rxTest] open a message reaction popup first");
+				return;
+			}
+			sendReaction(wrapper, { type: rType, icon: text });
+			console.log(`[rxTest] sent "${text}" with rType=${rType}`);
+		};
 
 	/**
 	 * Generates a simple hash code from a string using DJB2-like algorithm
