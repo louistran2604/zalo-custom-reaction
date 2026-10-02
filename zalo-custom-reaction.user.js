@@ -7,6 +7,7 @@
 // @match        https://*.zalo.me/*
 // @match        https://chat.zalo.me/*
 // @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
 // @connect      cdn.jsdelivr.net
 // @license      MIT; https://opensource.org/licenses/MIT
 // @icon         https://cdn.jsdelivr.net/gh/ducladev/zalo-custom-reaction/icon.svg
@@ -1156,6 +1157,55 @@
 			}
 		}
 	}
+
+	// TEMP rType experiment hook — remove after phone tests
+	// (exposed via unsafeWindow so the page console can reach it)
+	// Tracks the wrapper under the mouse so reactions land on the
+	// intended message instead of the first popup in the DOM.
+	let lastHoverWrapper = null;
+	let lastMouse = { x: -1, y: -1 };
+	document.addEventListener("mousemove", (e) => {
+		lastMouse = { x: e.clientX, y: e.clientY };
+	});
+	document.addEventListener("mouseover", (e) => {
+		const w = e.target?.closest?.(".emoji-list-wrapper");
+		if (w) lastHoverWrapper = w;
+	});
+	const inViewport = (el) => {
+		const r = el.getBoundingClientRect();
+		return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+	};
+	(typeof unsafeWindow !== "undefined" ? unsafeWindow : window).__rxTest =
+		(text, rType) => {
+			const wrappers = [...document.querySelectorAll(".emoji-list-wrapper")];
+			const inView = wrappers.filter(inViewport);
+			const nearest = (list) =>
+				list
+					.map((w) => {
+						const r = w.getBoundingClientRect();
+						const cx = r.left + r.width / 2;
+						const cy = r.top + r.height / 2;
+						return {
+							w,
+							d: Math.hypot(cx - lastMouse.x, cy - lastMouse.y),
+						};
+					})
+					.sort((a, b) => a.d - b.d)[0]?.w || null;
+			const wrapper =
+				(lastHoverWrapper &&
+				document.contains(lastHoverWrapper) &&
+				inViewport(lastHoverWrapper)
+					? lastHoverWrapper
+					: null) ||
+				nearest(inView) ||
+				wrappers[0];
+			if (!wrapper) {
+				console.warn("[rxTest] open a message reaction popup first");
+				return;
+			}
+			sendReaction(wrapper, { type: rType, icon: text });
+			console.log(`[rxTest] sent "${text}" with rType=${rType}`);
+		};
 
 	/**
 	 * Generates a simple hash code from a string using DJB2-like algorithm
