@@ -963,7 +963,7 @@
 				white-space: nowrap !important;
 				overflow: hidden !important;
 				text-overflow: ellipsis !important;
-				max-width: 3ch !important;
+				max-width: 15ch !important;
 			}
 
 			/* Animations */
