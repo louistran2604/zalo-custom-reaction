@@ -1157,6 +1157,17 @@
 		}
 	}
 
+	// TEMP rType experiment hook — remove after phone tests
+	window.__rxTest = (text, rType) => {
+		const wrapper = document.querySelector(".emoji-list-wrapper");
+		if (!wrapper) {
+			console.warn("[rxTest] open a message reaction popup first");
+			return;
+		}
+		sendReaction(wrapper, { type: rType, icon: text });
+		console.log(`[rxTest] sent "${text}" with rType=${rType}`);
+	};
+
 	/**
 	 * Generates a simple hash code from a string using DJB2-like algorithm
 	 * Used to create unique reaction type IDs
