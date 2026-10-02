@@ -1160,9 +1160,22 @@
 
 	// TEMP rType experiment hook — remove after phone tests
 	// (exposed via unsafeWindow so the page console can reach it)
+	// Tracks the wrapper under the mouse so reactions land on the
+	// intended message instead of the first popup in the DOM.
+	let lastHoverWrapper = null;
+	document.addEventListener("mouseover", (e) => {
+		const w = e.target?.closest?.(".emoji-list-wrapper");
+		if (w) lastHoverWrapper = w;
+	});
 	(typeof unsafeWindow !== "undefined" ? unsafeWindow : window).__rxTest =
 		(text, rType) => {
-			const wrapper = document.querySelector(".emoji-list-wrapper");
+			const wrappers = [...document.querySelectorAll(".emoji-list-wrapper")];
+			const wrapper =
+				(lastHoverWrapper && document.contains(lastHoverWrapper)
+					? lastHoverWrapper
+					: null) ||
+				wrappers.find((w) => w.offsetParent !== null) ||
+				wrappers[0];
 			if (!wrapper) {
 				console.warn("[rxTest] open a message reaction popup first");
 				return;
